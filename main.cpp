@@ -5,47 +5,36 @@
 #include <fstream>
 #include <sstream>
 
-// Структура для хранения информации о моде
+// РЎС‚СЂСѓРєС‚СѓСЂР° РґР»СЏ С…СЂР°РЅРµРЅРёСЏ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РјРѕРґРµ
 struct ModInfo {
     std::wstring name;
     std::wstring developer;
     std::wstring year;
     std::wstring link;
-    std::wstring path; // путь к папке мода
-    std::wstring exePath; // путь к exe, если есть
+    std::wstring path; // РїСѓС‚СЊ Рє РїР°РїРєРµ РјРѕРґР°
+    std::wstring exePath; // РїСѓС‚СЊ Рє exe, РµСЃР»Рё РµСЃС‚СЊ
 };
 
-// Глобальные переменные
+// Р“Р»РѕР±Р°Р»СЊРЅС‹Рµ РїРµСЂРµРјРµРЅРЅС‹Рµ
 std::vector<ModInfo> mods;
 int selectedModIndex = -1;
 
-// Путь к папке mods
+// РџСѓС‚СЊ Рє РїР°РїРєРµ mods
 std::wstring modsFolder = L"mods";
 
-// Глобальный HWND для надписи
+// Р“Р»РѕР±Р°Р»СЊРЅС‹Р№ HWND РґР»СЏ РЅР°РґРїРёСЃРё
 HWND hwndFooter = NULL;
 
-// Объявление функций
+// РћР±СЉСЏРІР»РµРЅРёРµ С„СѓРЅРєС†РёР№
 void LoadMods();
 void ShowModsList(HWND hwndList);
 void ShowModInfo(HWND hwndText);
 void LaunchMod(const ModInfo& mod);
-void LaunchOriginalGame(); // обновленная функция
+void LaunchOriginalGame();
 void ResizeFooter(HWND hwnd, HWND hwndFooter);
+std::wstring GetExecutableFolder();
 
-// Вспомогательная функция для получения папки текущего exe
-std::wstring GetExecutableFolder() {
-    wchar_t path[MAX_PATH];
-    GetModuleFileNameW(NULL, path, MAX_PATH);
-    std::wstring fullPath(path);
-    size_t pos = fullPath.find_last_of(L"\\/");
-    if (pos != std::wstring::npos) {
-        return fullPath.substr(0, pos);
-    }
-    return fullPath;
-}
-
-// Обработчик сообщений окна
+// РћР±СЂР°Р±РѕС‚С‡РёРє СЃРѕРѕР±С‰РµРЅРёР№ РѕРєРЅР°
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     static HWND hwndList, hwndInfo, hwndLaunchBtn, hwndRefreshBtn, hwndLaunchOrigBtn;
     switch (uMsg) {
@@ -70,13 +59,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             140, 170, 120, 30,
             hwnd, (HMENU)4, NULL, NULL);
 
-        // добавляем кнопку "Запустить оригинальную игру"
+        // РґРѕР±Р°РІР»СЏРµРј РєРЅРѕРїРєСѓ "Р—Р°РїСѓСЃС‚РёС‚СЊ РѕСЂРёРіРёРЅР°Р»СЊРЅСѓСЋ РёРіСЂСѓ"
         hwndLaunchOrigBtn = CreateWindow(L"BUTTON", L"Launch original game",
             WS_CHILD | WS_VISIBLE,
             10, 210, 200, 30,
             hwnd, (HMENU)5, NULL, NULL);
 
-        // создаем надпись "made by _boomerf90777_" в правом нижнем углу
+        // СЃРѕР·РґР°РµРј РЅР°РґРїРёСЃСЊ "made by _boomerf90777_" РІ РїСЂР°РІРѕРј РЅРёР¶РЅРµРј СѓРіР»Сѓ
         hwndFooter = CreateWindow(
             L"STATIC", L"made by _boomerf90777_",
             WS_CHILD | WS_VISIBLE | SS_RIGHT,
@@ -84,33 +73,37 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             hwnd, NULL, NULL, NULL);
         ResizeFooter(hwnd, hwndFooter);
 
-        // НЕНУЖНАЯ СТРОКА КОДА, ЕСЛИ ЕЁ УДАЛИТЬ ВСЁ ПОЛОМАЕТСЯ НАХЕР
-        {
-            std::wstring exeFolder = GetExecutableFolder();
-            // НЕТРОГАЙ
-            // ЭТА ФУНКЦИЯ ВАЖНАЯ
-        }
-
+        // Р’С‹Р·РѕРІ С„СѓРЅРєС†РёРё Р·Р°РіСЂСѓР·РєРё РјРѕРґРѕРІ
         LoadMods();
         ShowModsList(hwndList);
         return 0;
 
     case WM_COMMAND:
-        if (LOWORD(wParam) == 1) { // выбор в списке
+        if (LOWORD(wParam) == 1) { // РІС‹Р±РѕСЂ РІ СЃРїРёСЃРєРµ
             int sel = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0);
             selectedModIndex = sel;
+            HWND hwndInfo = GetDlgItem(GetParent(hwndList), 2);
             ShowModInfo(hwndInfo);
         }
-        else if (LOWORD(wParam) == 3) { // запуск мода
+        else if (LOWORD(wParam) == 3) { // Р·Р°РїСѓСЃРє РјРѕРґР°
             if (selectedModIndex >= 0 && selectedModIndex < (int)mods.size()) {
                 LaunchMod(mods[selectedModIndex]);
             }
         }
-        else if (LOWORD(wParam) == 4) { // обновить
+        else if (LOWORD(wParam) == 4) { // РѕР±РЅРѕРІРёС‚СЊ СЃРїРёСЃРѕРє
             LoadMods();
             ShowModsList(hwndList);
+            if (!mods.empty()) {
+                SendMessage(hwndList, LB_SETCURSEL, 0, 0);
+                selectedModIndex = 0;
+                HWND hwndInfo = GetDlgItem(GetParent(hwndList), 2);
+                ShowModInfo(hwndInfo);
+            }
+            else {
+                SetWindowText(GetDlgItem(GetParent(hwndList), 2), L"");
+            }
         }
-        else if (LOWORD(wParam) == 5) { // запуск оригинальной игры через Steam
+        else if (LOWORD(wParam) == 5) { // Р·Р°РїСѓСЃРє РѕСЂРёРіРёРЅР°Р»СЊРЅРѕР№ РёРіСЂС‹
             LaunchOriginalGame();
         }
         return 0;
@@ -143,8 +136,8 @@ void LoadMods() {
                 ModInfo mod;
                 mod.path = modsFolder + L"\\" + folderName;
 
-                // ищем ini
-                std::wstring iniPath = mod.path + L"\\" + folderName + L"_Mod\\mod.ini";
+                // РёС‰РµРј ini РїРѕ РёСЃРїСЂР°РІР»РµРЅРЅРѕР№ Р»РѕРіРёРєРµ
+                std::wstring iniPath = mod.path + L"\\mod.ini";
                 if (GetFileAttributes(iniPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
                     std::wifstream iniFile(iniPath);
                     std::wstring line;
@@ -159,7 +152,6 @@ void LoadMods() {
                             value.erase(0, value.find_first_not_of(L" \t"));
                             value.erase(value.find_last_not_of(L" \t") + 1);
 
-                            // Используем английские ключи
                             if (key == L"Title") {
                                 mod.name = value;
                             }
@@ -176,10 +168,12 @@ void LoadMods() {
                     }
                 }
                 if (mod.name.empty()) {
+                    // РќР°Р·РІР°РЅРёРµ РїРѕ РїР°РїРєРµ, РµСЃР»Рё РЅРµ СѓРєР°Р·Р°РЅРѕ РІ ini
+                    size_t pos = folderName.find_last_of(L"\\/");
                     mod.name = folderName;
                 }
 
-                // ищем exe
+                // РёС‰РµРј exe
                 WIN32_FIND_DATA exeFind;
                 std::wstring exeSearch = mod.path + L"\\*.exe";
                 HANDLE hExe = FindFirstFile(exeSearch.c_str(), &exeFind);
@@ -206,6 +200,8 @@ void ShowModsList(HWND hwndList) {
     if (!mods.empty()) {
         SendMessage(hwndList, LB_SETCURSEL, 0, 0);
         selectedModIndex = 0;
+        HWND hwndInfo = GetDlgItem(GetParent(hwndList), 2);
+        ShowModInfo(hwndInfo);
     }
 }
 
@@ -213,10 +209,10 @@ void ShowModInfo(HWND hwndText) {
     if (selectedModIndex >= 0 && selectedModIndex < (int)mods.size()) {
         const ModInfo& m = mods[selectedModIndex];
         std::wstringstream ss;
-        ss << L"Название: " << m.name << L"\r\n";
-        ss << L"Разработчик: " << m.developer << L"\r\n";
-        ss << L"Год: " << m.year << L"\r\n";
-        ss << L"Ссылка: " << m.link;
+        ss << L"Title: " << m.name << L"\r\n";
+        ss << L"Developer: " << m.developer << L"\r\n";
+        ss << L"Year: " << m.year << L"\r\n";
+        ss << L"Link: " << m.link;
         SetWindowText(hwndText, ss.str().c_str());
     }
 }
@@ -230,22 +226,19 @@ void LaunchMod(const ModInfo& mod) {
     }
 }
 
-// Обновленная функция для запуска через Steam
 void LaunchOriginalGame() {
-    // Запуск через Steam с ID игры
+    // Р—Р°РїСѓСЃРє С‡РµСЂРµР· Steam СЃ ID РёРіСЂС‹
     const wchar_t* steamCommand = L"steam://rungameid/962400";
-
     ShellExecuteW(NULL, L"open", steamCommand, NULL, NULL, SW_SHOWNORMAL);
 }
 
-// Функция для позиционирования надписи в правом нижнем углу
 void ResizeFooter(HWND hwnd, HWND hwndFooter) {
     RECT rc;
     GetClientRect(hwnd, &rc);
     int footerWidth = 200;
     int footerHeight = 20;
-    int x = rc.right - footerWidth - 10; // отступ слева
-    int y = rc.bottom - footerHeight - 10; // отступ сверху
+    int x = rc.right - footerWidth - 10; // РѕС‚СЃС‚СѓРї СЃР»РµРІР°
+    int y = rc.bottom - footerHeight - 10; // РѕС‚СЃС‚СѓРї СЃРІРµСЂС…Сѓ
     SetWindowPos(hwndFooter, NULL, x, y, footerWidth, footerHeight, SWP_NOZORDER);
 }
 
@@ -261,7 +254,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         0,
         wc.lpszClassName,
         L"Granny MOD Manager",
-        WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME, // отключаем кнопку развернуть и рамку для изменения размера
+        WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
         CW_USEDEFAULT, CW_USEDEFAULT, 540, 290,
         NULL, NULL, hInstance, NULL
     );
